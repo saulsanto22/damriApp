@@ -14,3 +14,19 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+kekurangan :
+#Auth :
+- validasi email serupa belum tampil pesan kesalahan
+- field no bus belum ada
+- verify email
+- validasi password belum maksimal 
+
+#Tracking :
+- marker penumpang dan pengemudi masih tampil satu 
+- belum memunculkan semua pengguna di maps 
+- estimasi 
+
+#API :
+- belum merequest permintaan data ke web
+
