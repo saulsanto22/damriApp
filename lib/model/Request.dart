@@ -1,36 +1,37 @@
+// // ignore: file_names
 // import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:damri/model/Destination.dart';
-// import 'User.dart';
+// import 'package:damri/model/Destino.dart';
+// import 'UserModel.dart';
 
 // class Requisicao {
 //   String? _id;
 //   String? _status;
-//   Users? _passageiro;
-//   Users? _motorista;
-//   Destino? _destino;
+//   Usuario? _passageiro;
+//   Usuario? _motorista;
+//   Destination? _destino;
 
 //   Requisicao() {
 //     FirebaseFirestore db = FirebaseFirestore.instance;
 
-//     DocumentReference ref = db.collection("requisicoes").doc();
+//     DocumentReference ref = db.collection("request").doc();
 //     this.id = ref.id;
 //   }
 
 //   Map<String, dynamic> toMap() {
 //     Map<String, dynamic> dadosPassageiro = {
-//       "nome": this.passageiro?.nome,
+//       "name": this.passageiro?.name,
 //       "email": this.passageiro?.email,
-//       "tipoUsuario": this.passageiro?.tipoUsuario,
-//       "idUsuario": this.passageiro?.idUsuario,
+//       "typeUser": this.passageiro?.userType,
+//       "idUser": this.passageiro?.idUser,
 //       "latitude": this.passageiro?.latitude,
 //       "longitude": this.passageiro?.longitude,
 //     };
 
 //     Map<String, dynamic> dadosDestino = {
-//       "rua": this.destino?.rua,
-//       "numero": this.destino?.numero,
-//       "bairro": this.destino?.bairro,
-//       "cep": this.destino?.cep,
+//       "jalan": this.destino?.street,
+//       "nomor": this.destino?.number,
+//       "daerah": this.destino?.daerah,
+//       "kodePos": this.destino?.kodePos,
 //       "latitude": this.destino?.latitude,
 //       "longitude": this.destino?.longitude,
 //     };
@@ -38,29 +39,29 @@
 //     Map<String, dynamic> dadosRequisicao = {
 //       "id": this.id,
 //       "status": this.status,
-//       "passageiro": dadosPassageiro,
-//       "motorista": null,
-//       "destino": dadosDestino,
+//       "penumpang": dadosPassageiro,
+//       "pengemudi": null,
+//       "tujuan": dadosDestino,
 //     };
 
 //     return dadosRequisicao;
 //   }
 
-//   Destino? get destino => _destino;
+//   Destination? get destino => _destino;
 
-//   set destino(Destino? value) {
+//   set destino(Destination? value) {
 //     _destino = value;
 //   }
 
-//   Users? get motorista => _motorista;
+//   Usuario? get motorista => _motorista;
 
-//   set motorista(Users? value) {
+//   set motorista(Usuario? value) {
 //     _motorista = value;
 //   }
 
-//   Users? get passageiro => _passageiro;
+//   Usuario? get passageiro => _passageiro;
 
-//   set passageiro(Users? value) {
+//   set passageiro(Usuario? value) {
 //     _passageiro = value;
 //   }
 
@@ -77,70 +78,73 @@
 //   }
 // }
 
+// ignore: file_names
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:damri/model/Destination.dart';
-import 'User.dart';
+import 'package:damri/model/destination.dart';
+import 'user_model.dart';
 
-class Requisicao {
+class Request {
   String? _id;
   String? _status;
-  Users? _penumpang;
-  Users? _pengemudi;
-  Destination? _destination;
+  // Users? _passageiro;
+  Users? _passenger;
+  // Users? _motorista;
+  Users? _driver;
+  Destination? _destina;
 
-  Requisicao() {
+  Request() {
     FirebaseFirestore db = FirebaseFirestore.instance;
 
-    DocumentReference ref = db.collection("requisicoes").doc();
+    DocumentReference ref = db.collection("request").doc();
     this.id = ref.id;
   }
 
   Map<String, dynamic> toMap() {
-    Map<String, dynamic> dataPenumpang = {
-      "nama": this.penumpang?.nama,
-      "email": this.penumpang?.email,
-      "tipeUser": this.penumpang?.userType,
-      "idUser": this.penumpang?.idUser,
-      "latitude": this.penumpang?.latitude,
-      "longitude": this.penumpang?.longitude,
+    Map<String, dynamic> passengerData = {
+      "name": this.passenger?.name,
+      "email": this.passenger?.email,
+      "typeUser": this.passenger?.userType,
+      "idUser": this.passenger?.idUser,
+      "latitude": this.passenger?.latitude,
+      "longitude": this.passenger?.longitude,
     };
 
-    Map<String, dynamic> dataDestination = {
-      "street": this.destination?.street,
-      "number": this.destination?.number,
-      "daerah": this.destination?.daerah,
-      "kode_pos": this.destination?.kodePos,
-      "latitude": this.destination?.latitude,
-      "longitude": this.destination?.longitude,
+    Map<String, dynamic> dataDes = {
+      "jalan": this.destina?.street,
+      "nomor": this.destina?.number,
+      "daerah": this.destina?.daerah,
+      "kodePos": this.destina?.kodePos,
+      "latitude": this.destina?.latitude,
+      "longitude": this.destina?.longitude,
     };
 
-    Map<String, dynamic> dataRequest = {
+    Map<String, dynamic> dataReq = {
       "id": this.id,
       "status": this.status,
-      "penumpang": dataPenumpang,
+      "penumpang": passengerData,
       "pengemudi": null,
-      "destination": dataDestination,
+      "tujuan": dataDes,
     };
 
-    return dataRequest;
+    return dataReq;
   }
 
-  Destination? get destination => _destination;
+  Destination? get destina => _destina;
 
-  set destination(Destination? value) {
-    _destination = value;
+  set destina(Destination? value) {
+    _destina = value;
   }
 
-  Users? get pengemudi => _pengemudi;
+  Users? get driver => _driver;
 
-  set pengemudi(Users? value) {
-    _pengemudi = value;
+  set driver(Users? value) {
+    _driver = value;
   }
 
-  Users? get penumpang => _penumpang;
+  Users? get passenger => _passenger;
 
-  set penumpang(Users? value) {
-    _penumpang = value;
+  set passenger(Users? value) {
+    _passenger = value;
   }
 
   String? get status => _status;

@@ -1,4 +1,4 @@
-import 'package:damri/pages/AuthLogin.dart';
+import 'package:damri/Pages/login.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_splash_screen/easy_splash_screen.dart';
 
@@ -15,7 +15,7 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
     return EasySplashScreen(
         logo: Image.network(
             'https://cdn1.iconfinder.com/data/icons/smart-eco-city-1/512/city_0024-128.png'),
-        title: Text(
+        title: const Text(
           "Damri Tracking",
           style: TextStyle(
               fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),
@@ -27,7 +27,7 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
           style: TextStyle(color: Colors.white),
         ),
         loaderColor: Colors.white,
-        navigator: Login(),
+        navigator: const LoginScreen(),
         durationInSeconds: 5);
   }
 }

@@ -1,50 +1,65 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:damri/util/StatusRequest.dart';
-import 'package:damri/util/UserFirebase.dart';
+import 'package:damri/util/status_req.dart';
+import 'package:damri/util/user_firebase.dart';
 import 'dart:io';
 
-import '../model/Marker.dart';
-import '../model/User.dart';
+import '../model/marker.dart';
+import '../model/user_model.dart';
 
-class Track extends StatefulWidget {
-  final String idRequest;
+class Monitoring extends StatefulWidget {
+  String idReq;
 
-  Track(this.idRequest, {Key? key}) : super(key: key);
+  Monitoring(this.idReq, {Key? key}) : super(key: key);
 
   @override
-  State<Track> createState() => _TrackState();
+  State<Monitoring> createState() => _MonitoringState();
 }
 
-class _TrackState extends State<Track> {
-  Completer<GoogleMapController> _controller = Completer();
+class _MonitoringState extends State<Monitoring> {
+  final Completer<GoogleMapController> _controller = Completer();
   Set<Marker> _markers = {};
-  Map<String, dynamic>? _requisitionData;
-  CameraPosition _positionCamera = CameraPosition(
+  var clients = [];
+
+  Map<String, dynamic>? _dataReq;
+  //
+  final CameraPosition _positionCamera = const CameraPosition(
     target: LatLng(-23.42087200129373, -51.93719096900213),
     zoom: 18,
   );
-  String? _idRequest;
+  String? _idReq;
   Position? _locationDriver;
-  String _statusRequisition = StatusRequisicao.AGUARDANDO;
+  String _statusReq = StatusReq.aWaiting;
 
-  //Controles para exibição na tela
-  String _textButton = "Terima ras";
-  Color _colorButton = Color(0xff1ebbd8);
-  Function? _buttonFunction;
+//Kontrol untuk tampilan di layar
+  String _textBtn = "Terima";
+
+  Color _colorBtn = const Color(0xff1ebbd8);
+  Function? _funcBtn;
   String _messageStatus = "";
+//   String? _idRequisicao;
+//   Position? _localMotorista;
+//   String _statusRequisicao = StatusRequisicao.AGUARDANDO;
+
+// //Kontrol untuk tampilan di layar
+//   String _textoBotao = "Terima";
+
+//   Color _corBotao = const Color(0xff1ebbd8);
+//   Function? _funcaoBotao;
+//   String _mensagemStatus = "";
 
   _changeMainButton(String text, Color color, Function func) {
     setState(() {
-      _textButton = text;
-      _colorButton = color;
-      _buttonFunction = func;
+      _textBtn = text;
+      _colorBtn = color;
+      _funcBtn = func;
     });
   }
 
@@ -52,15 +67,31 @@ class _TrackState extends State<Track> {
     _controller.complete(controller);
   }
 
-  // _retrieveLastKnownLocation() async {
+  // populatePenumpang() {
+  //   clients = [];
+  //   FirebaseFirestore.instance.collection('markers').doc().then((docs) {
+  //     if (docs.documents.isNotEmpty) {
+  //       setState(() {
+  //         clientsToggle = true;
+  //       });
+  //       for (int i = 0; i < docs.documents.length; ++i) {
+  //         clients.add(docs.documents[i].data);
+  //         initMarker(docs.documents[i].data);
+  //       }
+  //     }
+  //   });
+  // }
+
+  // _recuperarUltimaLocalizacaoConhecida() async {
   //   Position position = await Geolocator.getCurrentPosition(
   //       desiredAccuracy: LocationAccuracy.high);
 
   //   if (position != null) {
   //     //Atualizar localização em tempo real do motorista
-  //     // Perbarui lokasi real-time pengemudi
   //   }
   // }
+
+  // _movimentarCamera(CameraPosition cameraPosition) async {
 
   _moveCamera(CameraPosition cameraPosition) async {
     GoogleMapController googleMapController = await _controller.future;
@@ -68,22 +99,24 @@ class _TrackState extends State<Track> {
         .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
   }
 
+  // _adicionarListenerLocalizacao() async {
+
   _addListenerLocation() async {
     LocationPermission permission;
     await Geolocator.checkPermission();
     permission = await Geolocator.requestPermission();
 
-    var locationSetings =
-        LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 10);
+    var locationSetings = const LocationSettings(
+        accuracy: LocationAccuracy.high, distanceFilter: 10);
 
     Geolocator.getPositionStream(locationSettings: locationSetings)
         .listen((Position? position) {
       if (position != null) {
-        if (_idRequest != null && _idRequest!.isNotEmpty) {
-          if (_statusRequisition != StatusRequisicao.AGUARDANDO) {
-            //Atualiza local do passageiro
-            UserFirebase.updateDataLocation(_idRequest!, position.latitude,
-                position.longitude, "motorista");
+        if (_idReq != null && _idReq!.isNotEmpty) {
+          if (_statusReq != StatusReq.aWaiting) {
+//Update passenger location
+            UserFirebase.updateDataLocation(
+                _idReq!, position.latitude, position.longitude, "pengemudi");
           }
         }
       } else {
@@ -96,7 +129,8 @@ class _TrackState extends State<Track> {
     });
   }
 
-  _displayMarker(Position location, String icon, String infoWindow) async {
+  // _exibirMarcador(Position local, String icone, String infoWindow) async {
+  _showMarker(Position location, String icon, String infoWindow) async {
     double pixelRatio = MediaQuery.of(context).devicePixelRatio;
 
     BitmapDescriptor.fromAssetImage(
@@ -114,39 +148,39 @@ class _TrackState extends State<Track> {
     });
   }
 
-  _retrieveRequisition() async {
-    String idReq = widget.idRequest;
+  // _recuperarRequisicao() async {
+  //   String idRequisicao = widget.idRequisicao;
 
-    FirebaseFirestore db = FirebaseFirestore.instance;
-    DocumentSnapshot documentSnapshot =
-        await db.collection("request").doc(idReq).get();
-  }
+  //   FirebaseFirestore db = FirebaseFirestore.instance;
+  //   DocumentSnapshot documentSnapshot =
+  //       await db.collection("request").doc(idRequisicao).get();
+  // }
 
+  // _adicionarListenerRequisicao() {
   _addRequestListener() {
     FirebaseFirestore db = FirebaseFirestore.instance;
 
-    db.collection("request").doc(_idRequest).snapshots().listen((snapshot) {
+    db.collection("request").doc(_idReq).snapshots().listen((snapshot) {
       if (snapshot.data() != null) {
-        _requisitionData = snapshot.data()!;
+        _dataReq = snapshot.data()!;
 
         Map<String, dynamic>? data = snapshot.data();
-        _statusRequisition = data?["status"];
+        _statusReq = data?["status"];
 
-        switch (_statusRequisition) {
-          case StatusRequisicao.AGUARDANDO:
+        switch (_statusReq) {
+          case StatusReq.aWaiting:
             _statusWaiting();
             break;
-          case StatusRequisicao.A_CAMINHO:
+          case StatusReq.onTheWay:
             _statusOnTheWay();
             break;
-          case StatusRequisicao.VIAGEM:
+          case StatusReq.travelling:
             _statusTravelling();
             break;
-          case StatusRequisicao.FINALIZADA:
+          case StatusReq.finished:
             _statusFinished();
-
             break;
-          case StatusRequisicao.CONFIRMADA:
+          case StatusReq.confir:
             _statusConfirmed();
             break;
         }
@@ -157,31 +191,27 @@ class _TrackState extends State<Track> {
   _statusWaiting() async {
     FirebaseFirestore db = FirebaseFirestore.instance;
 
-    db
-        .collection("request")
-        .doc(_idRequest)
-        .snapshots()
-        .listen((snapshot) async {
+    db.collection("request").doc(_idReq).snapshots().listen((snapshot) async {
       if (snapshot.data() != null) {
         Map<String, dynamic>? data = snapshot.data();
-        _statusRequisition = data?["status"];
+        _statusReq = data?["status"];
 
-        switch (_statusRequisition) {
-          case StatusRequisicao.AGUARDANDO:
-            _changeMainButton("Terima ras", Color(0xff1ebbd8), () {
-              _acceptRacing();
+        switch (_statusReq) {
+          case StatusReq.aWaiting:
+            _changeMainButton("To Accept", const Color(0xff1ebbd8), () {
+              _acceptRace();
             });
 
             // if(_localMotorista != null) {
 
-            double? motoristaLat = _locationDriver?.latitude;
-            double? motoristaLon = _locationDriver?.longitude;
+            // double? motoristaLat = _localMotorista?.latitude;
+            // double? motoristaLon = _localMotorista?.longitude;
 
             Position position = await Geolocator.getCurrentPosition(
                 desiredAccuracy: LocationAccuracy.high);
 
             setState(() {
-              _displayMarker(position, "imagens/motorista.png", "motorista");
+              _showMarker(position, "imagens/motorista.png", "pengemudi");
             });
 
             CameraPosition cameraPosition = CameraPosition(
@@ -193,8 +223,8 @@ class _TrackState extends State<Track> {
 
             //}
             break;
-          case StatusRequisicao.CANCELADA:
-            Navigator.pushReplacementNamed(context, "/painel-motorista");
+          case StatusReq.cancel:
+            Navigator.pushReplacementNamed(context, "/panel-pengemudi");
             break;
         }
       }
@@ -202,92 +232,96 @@ class _TrackState extends State<Track> {
   }
 
   _statusOnTheWay() async {
-    _messageStatus = "dalam perjalanan ke Penumpang";
+    _messageStatus = "on the way to the passenger";
     _changeMainButton(
-      "Mulai Jalan",
-      Color(0xff1ebbd8),
+      "Mulai Perjalanan ",
+      const Color(0xff1ebbd8),
       () {
-        _iniciarCorrida();
+        _startRace();
       },
     );
 
-    double latitudePassageiro = _requisitionData!["passageiro"]["latitude"];
-    double longitudePassageiro = _requisitionData!["passageiro"]["longitude"];
-    double latitudeMotorista = _requisitionData!["motorista"]["latitude"];
-    double longitudeMotorista = _requisitionData!["motorista"]["longitude"];
+    // double latitudePassageiro = _dadosRequisicao!["penumpang"]["latitude"];
+    // double longitudePassageiro = _dadosRequisicao!["penumpang"]["longitude"];
+    // double latitudeMotorista = _dadosRequisicao!["pengemudi"]["latitude"];
+    // double longitudeMotorista = _dadosRequisicao!["pengemudi"]["longitude"];
+    double latitudePassenger = _dataReq!["penumpang"]["latitude"];
+    double longitudePassenger = _dataReq!["penumpang"]["longitude"];
+    double latitudeDriver = _dataReq!["pengemudi"]["latitude"];
+    double longitudeDriver = _dataReq!["pengemudi"]["longitude"];
 
-    UserMarker marcadorMotorista = UserMarker(
-        LatLng(latitudeMotorista, longitudeMotorista),
+    // Marcador marcadorMotorista = Marcador(
+    //     LatLng(latitudeMotorista, longitudeMotorista),
+    //     "imagens/motorista.png",
+    //     "Lokasi Pengemudi");
+    UserMarker markerDriver = UserMarker(
+        LatLng(latitudeDriver, longitudeDriver),
         "imagens/motorista.png",
         "Lokasi Pengemudi");
 
-    UserMarker marcadorPassageiro = UserMarker(
-        LatLng(latitudePassageiro, longitudePassageiro),
+    UserMarker markerPassenger = UserMarker(
+        LatLng(latitudePassenger, longitudePassenger),
         "imagens/passageiro.png",
-        "lokasi tujuan");
+        "Lokasi Tujuan");
 
-    _displayCenterTwoMarkers(marcadorMotorista, marcadorPassageiro);
+    _showCenterTwoMarkers(markerDriver, markerPassenger);
   }
 
   _statusTravelling() {
-    _messageStatus = "Bepergian";
+    _messageStatus = "Traveling";
     _changeMainButton(
-      "menyelesaikan perjalanan",
-      Color(0xff1ebbd8),
+      "Finish race",
+      const Color(0xff1ebbd8),
       () {
         _finishRace();
       },
     );
 
-    double latitudeDestino = _requisitionData!["destino"]["latitude"];
-    double longitudeDestino = _requisitionData!["destino"]["longitude"];
+    double latitudeDes = _dataReq!["tujuan"]["latitude"];
+    double longitudeDes = _dataReq!["tujuan"]["longitude"];
 
-    double latitudeOrigem = _requisitionData!["motorista"]["latitude"];
-    double longitudeOrigem = _requisitionData!["motorista"]["longitude"];
+    double latitudeOrigin = _dataReq!["pengemudi"]["latitude"];
+    double longitudeOrigin = _dataReq!["pengemudi"]["longitude"];
 
-    UserMarker marcadorOrigem = UserMarker(
-        LatLng(latitudeOrigem, longitudeOrigem),
+    UserMarker markerOrigin = UserMarker(
+        LatLng(latitudeOrigin, longitudeOrigin),
         "imagens/motorista.png",
         "Lokasi Pengemudi");
+    UserMarker markerDes = UserMarker(LatLng(latitudeDes, longitudeDes),
+        "imagens/destino.png", "Lokasi Tujuan");
 
-    UserMarker marcadorDestino = UserMarker(
-        LatLng(latitudeDestino, longitudeDestino),
-        "imagens/destino.png",
-        "Lokasi Tujuan");
-
-    _displayCenterTwoMarkers(marcadorOrigem, marcadorDestino);
+    _showCenterTwoMarkers(markerOrigin, markerDes);
   }
 
-  _displayCenterTwoMarkers(
-      UserMarker marcadorOrigem, UserMarker marcadorDestino) {
-    double latitudeOrigem = marcadorOrigem.lokasi.latitude;
-    double longitudeOrigem = marcadorOrigem.lokasi.longitude;
+  _showCenterTwoMarkers(UserMarker markerAsal, UserMarker markerTujuan) {
+    double latitudeOrigin = markerAsal.lokasi.latitude;
+    double longitudeOrigin = markerAsal.lokasi.longitude;
 
-    double latitudeDestino = marcadorDestino.lokasi.latitude;
-    double longitudeDestino = marcadorDestino.lokasi.longitude;
-    // nampilin lokasi asal ke tujuan
-    _displayTwoMarks(
-      marcadorOrigem,
-      marcadorDestino,
+    double latitudeDes = markerTujuan.lokasi.latitude;
+    double longitudeDes = markerTujuan.lokasi.longitude;
+
+    showTwoMarkers(
+      markerAsal,
+      markerTujuan,
     );
 
     //'southwest.latitude <= northeast.latitude' : is not true
     double? nLat, nLon, sLat, sLon;
 
-    if (latitudeOrigem <= latitudeDestino) {
-      sLat = latitudeOrigem;
-      nLat = latitudeDestino;
+    if (latitudeOrigin <= latitudeDes) {
+      sLat = latitudeOrigin;
+      nLat = latitudeDes;
     } else {
-      sLat = latitudeDestino;
-      nLat = latitudeOrigem;
+      sLat = latitudeDes;
+      nLat = latitudeOrigin;
     }
 
-    if (longitudeOrigem <= longitudeDestino) {
-      sLon = longitudeOrigem;
-      nLon = longitudeDestino;
+    if (longitudeOrigin <= longitudeDes) {
+      sLon = longitudeOrigin;
+      nLon = longitudeDes;
     } else {
-      sLon = longitudeDestino;
-      nLon = longitudeOrigem;
+      sLon = longitudeDes;
+      nLon = longitudeOrigin;
     }
 
     _moveCameraBounds(LatLngBounds(
@@ -298,51 +332,48 @@ class _TrackState extends State<Track> {
 
   _finishRace() {
     FirebaseFirestore db = FirebaseFirestore.instance;
-    db
-        .collection("request")
-        .doc(_idRequest)
-        .update({"status": StatusRequisicao.FINALIZADA});
+    db.collection("request").doc(_idReq).update({"status": StatusReq.finished});
 
-    String idPassageiro = _requisitionData!["passageiro"]["idUsuario"];
+    String idPassenger = _dataReq!["penumpang"]["idUser"];
     db
-        .collection("requisicao_ativa")
-        .doc(idPassageiro)
-        .update({"status": StatusRequisicao.FINALIZADA});
+        .collection("active_requisition")
+        .doc(idPassenger)
+        .update({"status": StatusReq.finished});
 
-    String idMotorista = _requisitionData!["motorista"]["idUsuario"];
+    String idDriver = _dataReq!["pengemudi"]["idUser"];
     db
-        .collection("requisicao_ativa_motorista")
-        .doc(idMotorista)
-        .update({"status": StatusRequisicao.FINALIZADA});
+        .collection("driver_active_requisition")
+        .doc(idDriver)
+        .update({"status": StatusReq.finished});
   }
 
   _statusFinished() async {
     //Calcula valor da corrida
-    double latitudeDestino = _requisitionData!["destino"]["latitude"];
-    double longitudeDestino = _requisitionData!["destino"]["longitude"];
+    double latitudeDestination = _dataReq!["tujuan"]["latitude"];
+    double longitudeDestination = _dataReq!["tujuan"]["longitude"];
 
-    double latitudeOrigem = _requisitionData!["origem"]["latitude"];
-    double longitudeOrigem = _requisitionData!["origem"]["longitude"];
+    double latitudeOrigin = _dataReq!["asal"]["latitude"];
+    double longitudeOrigin = _dataReq!["asal"]["longitude"];
 
     //para calcular um valor mais exato basta consumir uma API do google
     // que calcula a distanciaconsiderando as ruas do percurso.
-    double distanciaEmMetros = Geolocator.distanceBetween(
-        latitudeOrigem, longitudeOrigem, latitudeDestino, longitudeDestino);
+    double distanceInMeters = Geolocator.distanceBetween(latitudeOrigin,
+        longitudeOrigin, latitudeDestination, longitudeDestination);
 
     //converte para KM
-    double distanciaKM = distanciaEmMetros / 1000;
-    double valorViagem = distanciaKM * 8;
+    double distanceInKM = distanceInMeters / 1000;
+    double valuetrip = distanceInKM * 8;
 
     //8 é o valor cobrado por KM
     var f = NumberFormat('#,##0.00', 'pt_BR');
-    var valorViagemFormatado = f.format(valorViagem);
+    var valueTravelFormatted = f.format(valuetrip);
 
-    _messageStatus = "perjalanan selesai";
+    _messageStatus = "trip completed";
     _changeMainButton(
-      "Confirmasi - R\$ $valorViagemFormatado",
-      Color(0xff1ebbd8),
+      "Confirmar - R\$ $valueTravelFormatted",
+      const Color(0xff1ebbd8),
       () {
-        _confirmarCorrida();
+        _confirmRace();
       },
     );
 
@@ -351,7 +382,7 @@ class _TrackState extends State<Track> {
     Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high);
 
-    _displayMarker(position, "imagens/destino.png", "Tujuan");
+    _showMarker(position, "imagens/destino.png", "Tujuan");
 
     //setState(() {
     CameraPosition cameraPosition = CameraPosition(
@@ -363,45 +394,43 @@ class _TrackState extends State<Track> {
   }
 
   _statusConfirmed() {
-    Navigator.pushReplacementNamed(context, "/painel-motorista");
+    Navigator.pushReplacementNamed(context, "/panel-pengemudi");
   }
 
-  _confirmarCorrida() {
+  _confirmRace() {
     FirebaseFirestore db = FirebaseFirestore.instance;
-    db
-        .collection("request")
-        .doc(_idRequest)
-        .update({"status": StatusRequisicao.CONFIRMADA});
+    db.collection("request").doc(_idReq).update({"status": StatusReq.confir});
 
-    String idPassageiro = _requisitionData!["passageiro"]["idUsuario"];
-    db.collection("requisicao_ativa").doc(idPassageiro).delete();
+    String idPassenger = _dataReq!["penumpang"]["idUser"];
+    db.collection("active_requisition").doc(idPassenger).delete();
 
-    String idMotorista = _requisitionData!["motorista"]["idUsuario"];
-    db.collection("requisicao_ativa_motorista").doc(idMotorista).delete();
+    String idDriver = _dataReq!["pengemudi"]["idUser"];
+    db.collection("driver_active_requisition").doc(idDriver).delete();
   }
 
-  _iniciarCorrida() {
+  // _iniciarCorrida() {
+
+  _startRace() {
     FirebaseFirestore db = FirebaseFirestore.instance;
-    db.collection("request").doc(_idRequest).update({
-      "origem": {
-        "latitude": _requisitionData!["motorista"]["latitude"],
-        "longitude": _requisitionData!["motorista"]["longitude"],
+    db.collection("request").doc(_idReq).update({
+      "asal": {
+        "latitude": _dataReq!["pengemudi"]["latitude"],
+        "longitude": _dataReq!["pengemudi"]["longitude"],
       },
-      "status": StatusRequisicao.VIAGEM
+      "status": StatusReq.travelling
     });
 
-    String idPassageiro = _requisitionData!["passageiro"]["idUsuario"];
+    String idPassenger = _dataReq!["penumpang"]["idUser"];
     db
-        .collection("requisicao_ativa")
-        .doc(idPassageiro)
-        .update({"status": StatusRequisicao.VIAGEM});
+        .collection("active_requisition")
+        .doc(idPassenger)
+        .update({"status": StatusReq.travelling});
 
-    String idMotorista = _requisitionData!["motorista"]["idUsuario"];
-
+    String idDriver = _dataReq!["pengemudi"]["idUser"];
     db
-        .collection("requisicao_ativa_motorista")
-        .doc(idMotorista)
-        .update({"status": StatusRequisicao.VIAGEM});
+        .collection("driver_active_requisition")
+        .doc(idDriver)
+        .update({"status": StatusReq.travelling});
   }
 
   _moveCameraBounds(LatLngBounds latLngBounds) async {
@@ -410,72 +439,73 @@ class _TrackState extends State<Track> {
         .animateCamera(CameraUpdate.newLatLngBounds(latLngBounds, 100));
   }
 
-  _displayTwoMarks(UserMarker marcadorOrigem, UserMarker marcadorDestino) {
+  showTwoMarkers(UserMarker markerAsal, UserMarker markerTujuan) {
     double pixelRatio = MediaQuery.of(context).devicePixelRatio;
 
-    LatLng latLngOrigem = marcadorOrigem.lokasi;
-    LatLng latLngDestino = marcadorDestino.lokasi;
+    LatLng latLngAsal = markerAsal.lokasi;
+    LatLng latLngTujuan = markerTujuan.lokasi;
 
-    Set<Marker> _listaMarcadores = {};
+    Set<Marker> _listMarkers = {};
     BitmapDescriptor.fromAssetImage(
             ImageConfiguration(devicePixelRatio: pixelRatio),
-            marcadorOrigem.pathImage)
-        .then((BitmapDescriptor icone) {
+            markerAsal.pathImage)
+        .then((BitmapDescriptor icon) {
       Marker mOrigem = Marker(
-          markerId: MarkerId(marcadorOrigem.pathImage),
-          position: LatLng(latLngOrigem.latitude, latLngOrigem.longitude),
-          infoWindow: InfoWindow(title: marcadorOrigem.title),
-          icon: icone);
-      _listaMarcadores.add(mOrigem);
+          markerId: MarkerId(markerAsal.pathImage),
+          position: LatLng(latLngAsal.latitude, latLngAsal.longitude),
+          infoWindow: InfoWindow(title: markerAsal.title),
+          icon: icon);
+      _listMarkers.add(mOrigem);
     });
 
     BitmapDescriptor.fromAssetImage(
             ImageConfiguration(devicePixelRatio: pixelRatio),
-            marcadorDestino.pathImage)
-        .then((BitmapDescriptor icone) {
-      Marker mDestino = Marker(
-          markerId: MarkerId(marcadorDestino.pathImage),
-          position: LatLng(latLngDestino.latitude, latLngDestino.longitude),
-          infoWindow: InfoWindow(title: marcadorDestino.title),
-          icon: icone);
-      _listaMarcadores.add(mDestino);
+            markerTujuan.pathImage)
+        .then((BitmapDescriptor icon) {
+      Marker mDes = Marker(
+          markerId: MarkerId(markerTujuan.pathImage),
+          position: LatLng(latLngTujuan.latitude, latLngTujuan.longitude),
+          infoWindow: InfoWindow(title: markerTujuan.title),
+          icon: icon);
+      _listMarkers.add(mDes);
     });
 
     setState(() {
-      _markers = _listaMarcadores;
+      _markers = _listMarkers;
     });
   }
 
-  _acceptRacing() async {
-    //Recuperar dados do motorista
-    Users motorista = await UserFirebase.getLoginUserData();
+  // _aceitarCorrida() async {
+
+  _acceptRace() async {
+    //Ambil data pengemudi
+    Users driver = await UserFirebase.getLoggedUserData();
 
     Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high);
 
-    motorista.latitude = position.latitude;
-    motorista.longitude = position.longitude;
+    driver.latitude = position.latitude;
+    driver.longitude = position.longitude;
 
     FirebaseFirestore db = FirebaseFirestore.instance;
-    String idRequisicao = _requisitionData!["id"];
+    String idReq = _dataReq!["id"];
 
-    db.collection("request").doc(idRequisicao).update({
-      "motorista": motorista.toMap(),
-      "status": StatusRequisicao.A_CAMINHO,
+    db.collection("request").doc(idReq).update({
+      "pengemudi": driver.toMap(),
+      "status": StatusReq.onTheWay,
     }).then((_) {
       //atualiza requisicao ativa
-      String? idPassageiro = _requisitionData!["passageiro"]["idUsuario"];
-      db.collection("requisicao_ativa").doc(idPassageiro).update({
-        "status": StatusRequisicao.A_CAMINHO,
+      String? idPPassenger = _dataReq!["penumpang"]["idUser"];
+      db.collection("active_requisition").doc(idPPassenger).update({
+        "status": StatusReq.onTheWay,
       });
 
-      //
-      // Save active requisition for drive
-      String? idMotorista = motorista.idUser;
-      db.collection("requisicao_ativa_motorista").doc(idMotorista).set({
-        "id_requisicao": idRequisicao,
-        "id_usuario": idMotorista,
-        "status": StatusRequisicao.A_CAMINHO,
+      //Salvar requisicao ativa para motorista
+      String? idDriver = driver.idUser;
+      db.collection("driver_active_requisition").doc(idDriver).set({
+        "id_requst": idReq,
+        "id_user": idDriver,
+        "status": StatusReq.onTheWay,
       });
     });
   }
@@ -484,7 +514,7 @@ class _TrackState extends State<Track> {
   void initState() {
     super.initState();
 
-    _idRequest = widget.idRequest;
+    _idReq = widget.idReq;
 
     //adicionar listener para mudanças na requisição
     _addRequestListener();
@@ -497,7 +527,7 @@ class _TrackState extends State<Track> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Panel Pelacakan - $_messageStatus"),
+        title: Text("Panel Lacak- $_messageStatus"),
       ),
       body: Container(
         child: Stack(
@@ -506,7 +536,7 @@ class _TrackState extends State<Track> {
               mapType: MapType.normal,
               initialCameraPosition: _positionCamera,
               onMapCreated: _onMapCreated,
-              //myLocationEnabled: true,
+              myLocationEnabled: true,
               myLocationButtonEnabled: false,
               markers: _markers,
             ),
@@ -516,18 +546,18 @@ class _TrackState extends State<Track> {
               bottom: 0,
               child: Padding(
                 padding: Platform.isIOS
-                    ? EdgeInsets.fromLTRB(20, 10, 20, 25)
-                    : EdgeInsets.all(10),
+                    ? const EdgeInsets.fromLTRB(20, 10, 20, 25)
+                    : const EdgeInsets.all(10),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: _colorButton,
-                      padding: EdgeInsets.fromLTRB(32, 16, 32, 16)),
+                      backgroundColor: _colorBtn,
+                      padding: const EdgeInsets.fromLTRB(32, 16, 32, 16)),
                   onPressed: () {
-                    _buttonFunction!();
+                    _funcBtn!();
                   },
                   child: Text(
-                    _textButton,
-                    style: TextStyle(color: Colors.white, fontSize: 20),
+                    _textBtn,
+                    style: const TextStyle(color: Colors.white, fontSize: 20),
                   ),
                 ),
               ),

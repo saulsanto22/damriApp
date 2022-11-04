@@ -2,17 +2,17 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:damri/util/StatusRequest.dart';
-import 'package:damri/util/UserFirebase.dart';
+import 'package:damri/util/status_req.dart';
+import 'package:damri/util/user_firebase.dart';
 
-class PanelPengemudi extends StatefulWidget {
-  const PanelPengemudi({Key? key}) : super(key: key);
+class PanelSupir extends StatefulWidget {
+  const PanelSupir({Key? key}) : super(key: key);
 
   @override
-  State<PanelPengemudi> createState() => _PanelPengemudiState();
+  State<PanelSupir> createState() => _PanelSupirState();
 }
 
-class _PanelPengemudiState extends State<PanelPengemudi> {
+class _PanelSupirState extends State<PanelSupir> {
   List<String> itemsMenu = ["Profile", "Logout"];
   final _controller = StreamController<QuerySnapshot>.broadcast();
   FirebaseFirestore db = FirebaseFirestore.instance;
@@ -24,48 +24,61 @@ class _PanelPengemudiState extends State<PanelPengemudi> {
     Navigator.pushReplacementNamed(context, "/");
   }
 
-  _chooseMenuItem(String choose) {
-    switch (choose) {
+  _userProfile() {
+    setState(() {
+      Navigator.pushReplacementNamed(context, "/userProfile");
+    });
+  }
+
+  _chooseMenuItem(String pilihan) {
+    switch (pilihan) {
       case "Logout":
         _logoutUser();
         break;
+
       case "Profile":
-        // userprofile
+        _userProfile();
         break;
     }
   }
 
+// tambahkan Permintaan Pendengar
+  // Stream<QuerySnapshot>? _adicionarListenerRequisicoes() {
   Stream<QuerySnapshot>? _addListenerRequests() {
     final stream = db
         .collection("request")
-        .where("status", isEqualTo: StatusRequisicao.AGUARDANDO)
+        .where("status", isEqualTo: StatusReq.aWaiting)
         .snapshots();
 
-    stream.listen((dados) {
-      _controller.add(dados);
+    stream.listen((data) {
+      _controller.add(data);
     });
     return null;
   }
 
-  _retrieveActiveDriverRequest() async {
-    //Recupera dados do usuario logado
+// ambil permintaan Driver Aktif
+  // _recuperaRequisicaoAtivaMotorista() async {
+
+  _getActiveDriverRequest() async {
+//Mengambil data dari pengguna yang login
     User user = await UserFirebase.getCurrentUser();
 
-    //Recupera requisicao ativa
+//Ambil permintaan aktif
     DocumentSnapshot documentSnapshot =
-        await db.collection("requisicao_ativa_motorista").doc(user.uid).get();
+        await db.collection("driver_active_requisition").doc(user.uid).get();
 
-    Map<String, dynamic>? dataRequst =
+    Map<String, dynamic>? dataReq =
         documentSnapshot.data() as Map<String, dynamic>?;
 
-    if (dataRequst == null) {
+    if (dataReq == null) {
       _addListenerRequests();
     } else {
-      String idRequest = dataRequst["id_requisicao"];
+      String idReq = dataReq["id_request"];
+      // ignore: use_build_context_synchronously
       Navigator.pushReplacementNamed(
         context,
         "/corrida",
-        arguments: idRequest,
+        arguments: idReq,
       );
     }
   }
@@ -74,10 +87,10 @@ class _PanelPengemudiState extends State<PanelPengemudi> {
   void initState() {
     super.initState();
     /*
-    Recuperar requisicao ativa para verificar se motorista está
-    atendendo alguma requisição e envia ele para tela de corrida
+    Ambil permintaan aktif untuk memeriksa apakah pengemudi
+    memenuhi beberapa permintaan dan mengirimkannya ke layar yang sedang berjalan
     */
-    _retrieveActiveDriverRequest();
+    _getActiveDriverRequest();
   }
 
   @override
@@ -85,7 +98,7 @@ class _PanelPengemudiState extends State<PanelPengemudi> {
     var messageLoading = Center(
       child: Column(
         children: const [
-          Text("Memuat permintaan..."),
+          Text("Loading requests..."),
           CircularProgressIndicator()
         ],
       ),
@@ -93,17 +106,13 @@ class _PanelPengemudiState extends State<PanelPengemudi> {
 
     var messageNoData = const Center(
         child: Text(
-      "Anda tidak memiliki permintaan apa pun :( ",
+      "You don't have any requests :(",
       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
     ));
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: Text(
-          "Panel Pengemudi",
-          style: TextStyle(color: Colors.black),
-        ),
+        title: const Text("Panel Pengemudi"),
         actions: [
           PopupMenuButton<String>(
               onSelected: _chooseMenuItem,
@@ -124,11 +133,11 @@ class _PanelPengemudiState extends State<PanelPengemudi> {
               case ConnectionState.none:
               case ConnectionState.waiting:
                 return messageLoading;
-                break;
+
               case ConnectionState.active:
               case ConnectionState.done:
                 if (snapshot.hasError) {
-                  return Text("Terjadi kesalahan saat memuat data!");
+                  return const Text("Error loading data!");
                 } else {
                   QuerySnapshot? querySnapshot = snapshot.data;
                   if (querySnapshot?.docs.length == 0) {
@@ -140,32 +149,30 @@ class _PanelPengemudiState extends State<PanelPengemudi> {
                               height: 2,
                               color: Colors.grey,
                             ),
-                        itemBuilder: (context, indice) {
-                          List<DocumentSnapshot> requisicoes =
+                        itemBuilder: (context, index) {
+                          List<DocumentSnapshot> req =
                               querySnapshot.docs.toList();
-                          DocumentSnapshot item = requisicoes[indice];
+                          DocumentSnapshot item = req[index];
 
-                          String idRequisicao = item["id"];
-                          String nomePassageiro = item["passageiro"]["nome"];
-                          String rua = item["destino"]["rua"];
-                          String numero = item["destino"]["numero"];
+                          String idRequest = item["id"];
+                          String namaPenumpang = item["penumpang"]["name"];
+                          String jalan = item["tujuan"]["jalan"];
+                          String number = item["tujuan"]["nomor"];
 
                           return ListTile(
-                            title: Text(nomePassageiro),
-                            subtitle: Text("Tujuan: $rua, $numero"),
+                            title: Text(namaPenumpang),
+                            subtitle: Text("Tujuan: $jalan, $number"),
                             onTap: () {
                               Navigator.pushNamed(
                                 context,
-                                "/lacak",
-                                arguments: idRequisicao,
+                                "/corrida",
+                                arguments: idRequest,
                               );
                             },
                           );
                         });
                   }
                 }
-
-                break;
             }
           }),
     );

@@ -53,8 +53,8 @@
 // }
 
 class Destination {
-  String? _street;
-  String? _number;
+  String? _jalan;
+  String? _nomor;
   String? _kota;
   String? _daerah;
   String? _kodePos;
@@ -93,15 +93,15 @@ class Destination {
     _kota = value;
   }
 
-  String? get number => _number;
+  String? get number => _nomor;
 
   set number(String? value) {
-    _number = value;
+    _nomor = value;
   }
 
-  String? get street => _street;
+  String? get street => _jalan;
 
   set street(String? value) {
-    _street = value;
+    _jalan = value;
   }
 }
