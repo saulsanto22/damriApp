@@ -25,8 +25,12 @@ kekurangan :
 #Tracking :
 - marker penumpang dan pengemudi masih tampil satu 
 - belum memunculkan semua pengguna di maps 
-- estimasi 
+#Estimasi kedatangan bus
+- belum melakukan estimasi waktu
+#PENERAPAN ALGORITMA DIJKSTRA 
+-
 
 #API :
 - belum merequest permintaan data ke web
+
 

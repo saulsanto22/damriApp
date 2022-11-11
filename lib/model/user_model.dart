@@ -14,6 +14,7 @@ class Users {
   String? _email;
   String? _password;
   String? _userType;
+  String? _noBus;
 
   double? _latitude;
   double? _longitude;

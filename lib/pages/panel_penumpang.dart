@@ -47,9 +47,53 @@ class _PenumpangPageState extends State<PenumpangPage> {
   Function? _buttonFunction;
   CameraPosition _positionCamera = const CameraPosition(
     target: LatLng(-6.914864, 107.608238),
-    zoom: 18,
+    zoom: 13,
   );
 
+  _populationUser() async {
+    List users = [];
+    User firebaseUser = await UserFirebase.getCurrentUser();
+    FirebaseFirestore db = FirebaseFirestore.instance;
+
+    // cek user login
+
+    //jika ada == user online
+    // cek user type
+    //ambil data user yang online bedasarkan type -> lat long dari firestore
+
+    //tampilkan seluruh
+
+    FirebaseFirestore.instance.collection('users').doc().get().then((docs) {
+      if (docs.data()!.isNotEmpty) {
+        setState(() {
+          // clientsToggle = true;
+        });
+        for (int i = 0; i < docs.data()!.length; ++i) {
+          // clients.add(docs.data()[i].data);
+          print(docs.data()![i].data);
+        }
+      }
+    });
+  }
+
+  _hitungJarak() {
+    // implemtasi algoritma dijkstra
+    //
+    //   double _coordinateDistance(lat1, lon1, lat2, lon2) {
+    //   var p = 0.017453292519943295;
+    //   var c = cos;
+    //   var a = 0.5 -
+    //       c((lat2 - lat1) * p) / 2 +
+    //       c(lat1 * p) * c(lat2 * p) * (1 - c((lon2 - lon1) * p)) / 2;
+    //   return 12742 * asin(sqrt(a));
+    // }
+  }
+
+  estimatedTime() {
+    //langkah langkah
+    // rumusnya
+    // waktu = jarak / kecepatan
+  }
   _onMapCreated(GoogleMapController controller) {
     _controller.complete(controller);
   }
@@ -89,6 +133,8 @@ class _PenumpangPageState extends State<PenumpangPage> {
     Geolocator.getPositionStream(locationSettings: locationSetings)
         .listen((Position position) {
       if (_idReq != null && _idReq!.isNotEmpty) {
+        // untuk menentukan kecepatan dari lokasi = pos.speed
+        print('${position.speed}');
 //Update passenger location
         UserFirebase.updateDataLocation(
             _idReq!, position.latitude, position.longitude, "penumpang");
@@ -103,7 +149,7 @@ class _PenumpangPageState extends State<PenumpangPage> {
 
   List<String> itemsMenu = ["Informasi", "Profile", "Logout"];
 
-  _deslogarUsuario() {
+  _logoutUser() {
     FirebaseAuth auth = FirebaseAuth.instance;
 
     auth.signOut();
@@ -126,7 +172,7 @@ class _PenumpangPageState extends State<PenumpangPage> {
   _chooseMenuItem(String pilihan) {
     switch (pilihan) {
       case "Logout":
-        _deslogarUsuario();
+        _logoutUser();
         break;
       case "Informasi":
         _information();
